@@ -1,0 +1,31 @@
+SELECT * from scraped_data.data;
+select * from scraped_data.comments;
+-- Counting The Records we'll be working with
+SELECT count(*) FROM scraped_data.data;
+select count(*) from scraped_data.comments;
+-- Counting the Records with deleted authors
+select count(*) from scraped_data.data where author Like 'Deleted';
+-- Selecting the record with the highest score
+select title,score from scraped_data.data order by score desc limit 20;
+-- Selecting the records with higesth comments
+select title,num_comments from scraped_data.data order by num_comments desc limit 20;
+-- Finding the author who posts a lot on r/worldnews
+select author,count(title) as title_count from scraped_data.data where author not like 'Deleted' group by author order by count(title) desc;
+-- Finding the top authors
+select count(a.author) as author_count from (select author,count(title) as title_count from scraped_data.data where author not like 'Deleted' group by author order by count(title) desc) as a  where a.title_count >=100 ;
+-- select top(10) percent score from scraped_data.data;
+-- finding the dates with most number of posts
+select datetime,count(title) as title_count from scraped_data.data group by datetime order by title_count desc limit 10;
+select datetime,sum(num_comments) as comment_count from scraped_data.data group by datetime order by comment_count desc limit 10;
+select datetime,sum(score) as score_count from scraped_data.data group by datetime order by score_count desc limit 10;
+select month(datetime) as month,count(title) as title_count from scraped_data.data group by month ;
+-- Table for semantic analysis of comments on posts of subreddit
+create view sa as select data.datetime,data.title,comments.pscore,comments.nscore from scraped_data.data inner join scraped_data.comments on data.title=comments.title;
+select * from sa;
+select datetime,title,pscore-nscore as positive_comments from sa order by  positive_comments desc;
+select datetime,title,nscore-pscore as negative_comments from sa order by  negative_comments desc;
+select month(datetime) as month,sum(pscore-nscore) as positive_comments_sum from sa group by month order by month asc,positive_comments_sum desc;
+drop view sa;
+-- select month(datetime),score,percent_rank() over (partition by month(datetime) order by score) from scraped_data.data;      just checking useless 
+select month(datetime),score,percent_rank() over (partition by month(datetime) order by score) as Percentile,ntile(4) over (order by score) as Quartile from scraped_data.data;
+select month(datetime),score,ntile(4) over (order by month(datetime)) as Quartile from scraped_data.data;
